@@ -1,3 +1,18 @@
+# Changes on this Fork
+- Fix to be compatible with other extensions(e.g. Dynamic prompt)
+- Prompt Removal for ddetailer.
+
+## Usage
+- Now other extensions' result appiled well(e.g. Dynamic prompt), you can see the result on metadata
+![image](https://user-images.githubusercontent.com/32811724/232382714-cb7c37fe-8f97-470a-8bb7-cf285da53c9d.png)
+- And also you can use prompt removal for ddetailer. 
+- For example, you can see something ruined by too many uses of Loras. 
+- You can recover it by using remove keyword UI
+
+![image](https://user-images.githubusercontent.com/32811724/232397647-95083c5d-1867-45a3-a572-0765db1f8834.png)
+
+![image](https://user-images.githubusercontent.com/32811724/232397747-8ed0f5f5-6b30-487e-8d2b-9cbe51ac862a.png)
+
 # Detection Detailer
 An object detection and auto-mask extension for [Stable Diffusion web UI](https://github.com/AUTOMATIC1111/stable-diffusion-webui). See [Installation](https://github.com/dustysys/ddetailer#installation).
 
