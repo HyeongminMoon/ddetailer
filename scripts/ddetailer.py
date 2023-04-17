@@ -118,6 +118,10 @@ class DetectionDetailerScript(scripts.Script):
                 dd_inpaint_full_res = gr.Checkbox(label='Inpaint at full resolution ', value=True, visible = (not is_img2img))
                 dd_inpaint_full_res_padding = gr.Slider(label='Inpaint at full resolution padding, pixels ', minimum=0, maximum=256, step=4, value=32, visible=(not is_img2img))
 
+        with gr.Group():
+            with gr.Row():
+                dd_removal = gr.Textbox(label = 'Enter keywords to remove from the prompt(e.g. people,hands)', visible=True)
+                
         dd_model_a.change(
             lambda modelname: {
                 dd_model_b:gr_show( modelname != "None" ),
@@ -154,7 +158,8 @@ class DetectionDetailerScript(scripts.Script):
                 dd_conf_b, dd_dilation_factor_b,
                 dd_offset_x_b, dd_offset_y_b,  
                 dd_mask_blur, dd_denoising_strength,
-                dd_inpaint_full_res, dd_inpaint_full_res_padding
+                dd_inpaint_full_res, dd_inpaint_full_res_padding,
+                dd_removal
         ]
 
     def run(self, p, info,
@@ -167,7 +172,8 @@ class DetectionDetailerScript(scripts.Script):
                      dd_conf_b, dd_dilation_factor_b,
                      dd_offset_x_b, dd_offset_y_b,  
                      dd_mask_blur, dd_denoising_strength,
-                     dd_inpaint_full_res, dd_inpaint_full_res_padding):
+                     dd_inpaint_full_res, dd_inpaint_full_res_padding,
+                     dd_removal):
 
         processing.fix_seed(p)
         initial_info = None
@@ -236,6 +242,22 @@ class DetectionDetailerScript(scripts.Script):
             if len(init_prompts) > 1:
                 init_neg_prompt = init_prompts[1].split('Steps:')[0].lstrip().rstrip('\n')
             
+            FLAG_PRINT = False
+            removal = dd_removal.split(",")
+            new_prompt = init_pos_prompt
+            for idx, prefix in enumerate([s.strip() for s in removal]):
+                print(prefix, removal[idx] + ',')
+                if not prefix: continue
+                if 'print' in prefix:
+                    FLAG_PRINT = True
+                    continue
+                if prefix in new_prompt:
+                    new_prompt = new_prompt.replace(removal[idx] + ',', "")
+                    new_prompt = new_prompt.replace(removal[idx], "")
+            new_prompt = new_prompt.strip()
+            if FLAG_PRINT:
+                print("final prompt for ddtailer: ", new_prompt)
+            
             # Optional secondary pre-processing run
             if (dd_model_b != "None" and dd_preprocess_b): 
                 label_b_pre = "B"
@@ -259,7 +281,7 @@ class DetectionDetailerScript(scripts.Script):
                         p.image_mask = masks_b_pre[i]
                         if ( opts.dd_save_masks):
                             images.save_image(masks_b_pre[i], opts.outdir_ddetailer_masks, "", start_seed, p.prompt, opts.samples_format, p=p)
-                        p.prompt = init_pos_prompt
+                        p.prompt = new_prompt
                         p.negative_prompt = init_neg_prompt
                         processed = processing.process_images(p)
                         p.prompt = p_txt.prompt
@@ -323,13 +345,13 @@ class DetectionDetailerScript(scripts.Script):
                         if ( opts.dd_save_masks):
                             images.save_image(masks_a[i], opts.outdir_ddetailer_masks, "", start_seed, p.prompt, opts.samples_format, p=p)
                         
-                        p.prompt = init_pos_prompt
+                        p.prompt = new_prompt
                         p.negative_prompt = init_neg_prompt
                         processed = processing.process_images(p)
                         p.prompt = p_txt.prompt
                         p.negative_prompt = p_txt.negative_prompt
                         if initial_info is None or initial_info != processed.info:
-                            initial_info = processed.info
+                            initial_info = init_image.info['parameters'] + '\n' + "ddetailer prompt: {}".format(processed.info)
                         p.seed = processed.seed + 1
                         p.init_images = processed.images
                     
